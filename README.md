@@ -254,7 +254,7 @@ Measured on a Windows 11 machine with CPython 3.13, pytest 9 and coverage.py 7.1
 | `ruff check` / `ruff format --check` | clean, 70 files |
 | Example corpus | **33 / 33** cases pass |
 
-![Coverage report: 96%](docs/images/local_run/prooftrail-coverage-report.png)
+![Coverage report: 96%](docs/images/local_run/prooftrail-coverage.png)
 
 ![ruff check and format](docs/images/local_run/prooftrail-code-quality.png)
 
