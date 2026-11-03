@@ -1,0 +1,45 @@
+schema_version: "1.0"
+
+# Peterson's algorithm with the waiting test removed (a bug).
+model:
+  id: peterson-broken
+  description: "Peterson's algorithm with the waiting test removed (a bug)."
+
+  variables:
+    pc0:   { type: enum, values: [idle, set, wait, crit], initial: idle }
+    pc1:   { type: enum, values: [idle, set, wait, crit], initial: idle }
+    flag0: { type: boolean, initial: false }
+    flag1: { type: boolean, initial: false }
+    turn:  { type: integer, min: 0, max: 1, initial: [0, 1] }
+
+  transitions:
+    - id: p0_flag
+      when: 'pc0 == "idle"'
+      updates: { pc0: set, flag0: true }
+    - id: p0_turn
+      when: 'pc0 == "set"'
+      updates: { pc0: wait, turn: 1 }
+    - id: p0_enter
+      when: 'pc0 == "wait"'
+      updates: { pc0: crit }
+    - id: p0_exit
+      when: 'pc0 == "crit"'
+      updates: { pc0: idle, flag0: false }
+    - id: p1_flag
+      when: 'pc1 == "idle"'
+      updates: { pc1: set, flag1: true }
+    - id: p1_turn
+      when: 'pc1 == "set"'
+      updates: { pc1: wait, turn: 0 }
+    - id: p1_enter
+      when: 'pc1 == "wait"'
+      updates: { pc1: crit }
+    - id: p1_exit
+      when: 'pc1 == "crit"'
+      updates: { pc1: idle, flag1: false }
+
+properties:
+  - id: mutual-exclusion
+    type: invariant
+    description: "The two processes are never in the critical section together."
+    expression: 'not (pc0 == "crit" and pc1 == "crit")'

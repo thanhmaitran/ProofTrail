@@ -1,0 +1,74 @@
+schema_version: "1.0"
+
+# Peterson's mutual exclusion algorithm for two processes.
+model:
+  id: peterson
+  description: "Peterson's mutual exclusion algorithm for two processes."
+
+  variables:
+    pc0:   { type: enum, values: [idle, set, wait, crit], initial: idle }
+    pc1:   { type: enum, values: [idle, set, wait, crit], initial: idle }
+    flag0: { type: boolean, initial: false }
+    flag1: { type: boolean, initial: false }
+    turn:  { type: integer, min: 0, max: 1, initial: [0, 1] }
+
+  transitions:
+    - id: p0_flag
+      when: 'pc0 == "idle"'
+      updates: { pc0: set, flag0: true }
+    - id: p0_turn
+      when: 'pc0 == "set"'
+      updates: { pc0: wait, turn: 1 }
+    - id: p0_enter
+      when: 'pc0 == "wait" and (not flag1 or turn == 0)'
+      updates: { pc0: crit }
+    - id: p0_exit
+      when: 'pc0 == "crit"'
+      updates: { pc0: idle, flag0: false }
+    - id: p1_flag
+      when: 'pc1 == "idle"'
+      updates: { pc1: set, flag1: true }
+    - id: p1_turn
+      when: 'pc1 == "set"'
+      updates: { pc1: wait, turn: 0 }
+    - id: p1_enter
+      when: 'pc1 == "wait" and (not flag0 or turn == 1)'
+      updates: { pc1: crit }
+    - id: p1_exit
+      when: 'pc1 == "crit"'
+      updates: { pc1: idle, flag1: false }
+
+properties:
+  - id: mutual-exclusion
+    type: invariant
+    description: "The two processes are never in the critical section together."
+    expression: 'not (pc0 == "crit" and pc1 == "crit")'
+
+  - id: deadlock-free
+    type: deadlock_free
+
+  - id: p0-can-enter
+    type: reachability
+    target: 'pc0 == "crit"'
+
+  - id: can-always-reset
+    type: ctl
+    description: "From every state both processes can return to idle."
+    formula: 'AG EF ({pc0 == "idle"} && {pc1 == "idle"})'
+
+  - id: p0-not-starved
+    type: response
+    description: >-
+      A waiting p0 eventually enters. HOLDS even without a fairness assumption:
+      once p0 waits, p1 can take at most two more steps before it is blocked,
+      so every infinite execution must run p0.
+    trigger: 'pc0 == "wait"'
+    response: 'pc0 == "crit"'
+
+  - id: p0-eventually-requests
+    type: response
+    description: >-
+      An idle p0 eventually raises its flag. FAILS without fairness: p1 may
+      loop through its critical section forever while p0 is never scheduled.
+    trigger: 'pc0 == "idle"'
+    response: 'pc0 == "set"'
