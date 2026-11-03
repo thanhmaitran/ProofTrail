@@ -1,0 +1,2 @@
+[console_scripts]
+prooftrail = prooftrail.cli:main

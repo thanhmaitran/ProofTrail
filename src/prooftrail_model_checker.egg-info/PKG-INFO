@@ -1,0 +1,227 @@
+Metadata-Version: 2.4
+Name: prooftrail-model-checker
+Version: 0.1.0
+Summary: An explicit-state model checking and formal verification workbench.
+License-Expression: MIT
+Keywords: model checking,formal verification,CTL,counterexample
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Classifier: Topic :: Software Development :: Quality Assurance
+Classifier: Intended Audience :: Science/Research
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: PyYAML>=6.0
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+Requires-Dist: pytest-cov>=5.0; extra == "dev"
+Requires-Dist: hypothesis>=6.0; extra == "dev"
+Requires-Dist: ruff>=0.9; extra == "dev"
+Requires-Dist: networkx>=3.0; extra == "dev"
+Provides-Extra: visualization
+Requires-Dist: networkx>=3.0; extra == "visualization"
+Requires-Dist: matplotlib>=3.8; extra == "visualization"
+Dynamic: license-file
+
+# ProofTrail
+
+**An explicit-state model checking and formal verification workbench**
+
+ProofTrail explores finite transition systems described in YAML or JSON,
+checks formally defined properties, and produces counterexample traces that are
+independently re-validated before they are reported.
+
+```
+$ prooftrail check examples/counter/unsafe_counter.yaml
+
+[FAIL] counter-bound  (invariant) -> VIOLATED
+       The counter never exceeds 3.
+       counterexample (finite, 4 step(s)):
+         [0] (initial) counter=0
+         [1] --increment--> counter=1
+         [2] --increment--> counter=2
+         [3] --increment--> counter=3
+         [4] --increment--> counter=4
+```
+
+## Overview
+
+- **Explicit-state exploration**: breadth-first search with dense state
+  indexing; counterexamples are shortest in number of steps.
+- **Properties**: invariants, reachability, deadlock freedom, CTL (`EX AX EF AF
+  EG AG`, `E[.U.]`, `A[.U.]`) and a `response` shorthand
+  (`AG (trigger -> AF response)`) with lasso counterexamples.
+- **Four distinct verdicts**: `HOLDS`, `VIOLATED`, `UNKNOWN` (a resource limit
+  was hit) and `ERROR`. A limit never turns into `HOLDS`.
+- **Safe by construction**: specifications are untrusted input. There is no
+  `eval`; expressions run through an allow-listed evaluator.
+- **Evidence you can audit**: structured JSON reports, and `explain --model`
+  replays every stored trace against the model.
+- **Reproducible**: a hand-derived example corpus and benchmarks whose numbers
+  are measured by a script, never typed in.
+
+## Installation
+
+Requires Python 3.12 or newer.
+
+```
+git clone <this repository>
+cd prooftrail-model-checker
+python -m venv .venv
+source .venv/bin/activate          # Windows: .\.venv\Scripts\Activate.ps1
+python -m pip install -e ".[dev,visualization]"
+```
+
+The core needs only PyYAML. The `visualization` extra adds `networkx` and
+`matplotlib` for PNG graphs and benchmark charts.
+
+## Quick start
+
+```
+prooftrail validate examples/counter/unsafe_counter.yaml
+prooftrail check    examples/counter/safe_counter.yaml
+prooftrail check    examples/counter/unsafe_counter.yaml --format json -o reports/counter.json
+prooftrail explain  reports/counter.json --model examples/counter/unsafe_counter.yaml
+prooftrail graph    examples/traffic_light/model.yaml --format mermaid
+prooftrail corpus   examples/manifest.json
+```
+
+The same checks from Python:
+
+```python
+from prooftrail import load_specification, verify
+
+spec = load_specification("examples/counter/unsafe_counter.yaml")
+run = verify(spec.system, spec.properties)
+for result in run.results:
+    print(result.property_id, result.status)  # counter-bound VIOLATED
+```
+
+A specification looks like this:
+
+```yaml
+schema_version: "1.0"
+model:
+  id: unsafe-counter
+  variables:
+    counter: { type: integer, initial: 0 }
+  transitions:
+    - id: increment
+      when: "counter <= 3"          # off by one: should be "< 3"
+      updates: { counter: "counter + 1" }
+properties:
+  - id: counter-bound
+    type: invariant
+    expression: "counter <= 3"
+```
+
+### Exit codes
+
+| Code | Meaning |
+|---|---|
+| 0 | every property holds |
+| 1 | at least one property is violated |
+| 2 | error (bad specification, modelling error, ...) |
+| 3 | only inconclusive results (`UNKNOWN`) |
+
+### Useful options
+
+`--property ID` (repeatable), `--max-states N`, `--max-depth N`,
+`--timeout SECONDS`, `--indexing {object,packed}`,
+`--strategy {shared,per-property}`, `--cache`, `--memory`, `--no-timing`
+(byte-reproducible reports) and `--no-traces`.
+
+## Supported semantics
+
+Summarised here; the precise definitions are in
+[docs/formal-semantics.md](docs/formal-semantics.md).
+
+- Models are guarded-command transition systems over `integer`, `boolean` and
+  `enum` variables. All updates of a transition are evaluated against the
+  pre-state simultaneously. Non-determinism comes from several enabled
+  transitions or several initial values.
+- Temporal properties are evaluated on the graph **totalized** with a stutter
+  self-loop at every deadlock state. Deadlock freedom is checked on the
+  original graph.
+- No fairness assumptions are made.
+- `HOLDS` for a safety property requires exhaustive exploration. A
+  counterexample is conclusive even when a limit was also hit.
+- A verdict describes the model, not the real system it is meant to represent.
+
+## Examples
+
+| Model | What it shows |
+|---|---|
+| [`counter/`](examples/counter) | Safe and defective bounded counter; every verdict kind |
+| [`traffic_light/`](examples/traffic_light) | State machine with safety and liveness (CTL) |
+| [`producer_consumer/`](examples/producer_consumer) | Bounded buffer, plus a variant that overflows |
+| [`resource_protocol/`](examples/resource_protocol) | Lock-ordering deadlock, and the ordered fix |
+| [`peterson/`](examples/peterson) | Peterson's mutual exclusion, and a broken variant |
+| [`misc/`](examples/misc) | Cycles, several initial states, a diamond, a long trace |
+| [`invalid/`](examples/invalid) | Specifications that must be rejected (including code injection) |
+
+`examples/manifest.json` pairs every model with its expected answers and a
+written derivation of how each answer was obtained **without** running the
+tool. `prooftrail corpus examples/manifest.json` re-checks all of them
+(33 cases).
+
+## Testing
+
+```
+python -m pytest                                        # 2259 test cases
+python -m pytest --cov=prooftrail --cov-report=term-missing
+ruff check . && ruff format --check .
+prooftrail corpus examples/manifest.json
+```
+
+The suite combines unit, integration, regression and randomized differential
+tests. The differential tests compare the engine with independent references
+(set closure, `networkx` shortest paths, a naive CTL fixed-point iteration).
+See [docs/correctness.md](docs/correctness.md) for the claims and how each is
+checked. CI runs lint, tests with coverage, the corpus and a benchmark smoke
+test on Python 3.12 and 3.13 (see `.github/workflows/ci.yml`).
+
+## Benchmarks
+
+```
+python benchmarks/run_benchmarks.py           # full run (several minutes)
+python benchmarks/run_benchmarks.py --quick   # smoke test
+```
+
+Methodology: [docs/benchmark-methodology.md](docs/benchmark-methodology.md).
+The committed results in [`benchmarks/results/`](benchmarks/results) were
+measured on one 2-vCPU Xeon @ 2.1 GHz machine with CPython 3.13; they show
+runtime growing near-linearly in reachable states plus transitions (log-log
+slope 1.14), `packed` indexing using about a fifth of the memory of `object`
+indexing at 65 536 states with the same runtime, and a successor cache that
+helps only when several explorations repeat the same expansions. Absolute times
+will differ on your hardware; re-run before quoting numbers.
+
+![Runtime vs. states](benchmarks/results/runtime-vs-states.png)
+
+## Limitations
+
+Explicit-state search suffers state-space explosion, the engine is pure Python,
+and there is no LTL, no fairness and no state-space reduction. Full discussion
+in [docs/limitations.md](docs/limitations.md).
+
+## Documentation
+
+- [Architecture](docs/architecture.md)
+- [Formal semantics](docs/formal-semantics.md)
+- [Algorithms](docs/algorithms.md)
+- [Correctness and test strategy](docs/correctness.md)
+- [Security notes](docs/security.md)
+- [Benchmark methodology](docs/benchmark-methodology.md)
+- [Limitations](docs/limitations.md)
+- Design decisions: [research/design-decisions](research/design-decisions)
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). To report a vulnerability see
+[SECURITY.md](SECURITY.md).
+
+## License
+
+MIT. See [LICENSE](LICENSE).
