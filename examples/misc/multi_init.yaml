@@ -1,0 +1,29 @@
+schema_version: "1.0"
+
+# Several initial states: a in {true, false} x n in {0, 1} = 4 initial states.
+model:
+  id: multi-init
+  description: "A model with four initial states."
+
+  variables:
+    a: { type: boolean, initial: [true, false] }
+    n: { type: integer, min: 0, max: 2, initial: [0, 1] }
+
+  transitions:
+    - id: flip
+      updates: { a: "not a" }
+    - id: inc
+      when: "n < 2"
+      updates: { n: "n + 1" }
+
+properties:
+  - id: n-bound
+    type: invariant
+    expression: "n <= 2"
+
+  - id: reach-both
+    type: reachability
+    target: "n == 2 and a"
+
+  - id: no-deadlock
+    type: deadlock_free

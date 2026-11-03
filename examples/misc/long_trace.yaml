@@ -1,0 +1,19 @@
+schema_version: "1.0"
+
+# A deep counterexample: the bug is only reachable after 20 steps.
+model:
+  id: long-trace
+  description: "A counter whose bug appears after 20 increments."
+
+  variables:
+    x: { type: integer, initial: 0 }
+
+  transitions:
+    - id: step
+      when: "x <= 19"     # BUG (intentional): should be x < 19
+      updates: { x: "x + 1" }
+
+properties:
+  - id: x-bound
+    type: invariant
+    expression: "x <= 19"

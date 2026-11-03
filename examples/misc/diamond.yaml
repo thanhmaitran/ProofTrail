@@ -1,0 +1,40 @@
+schema_version: "1.0"
+
+# Two equally short routes 0 -> {1,2} -> 3 -> 4 ending in a terminal state.
+model:
+  id: diamond
+  description: "A diamond-shaped graph with a terminal state."
+
+  variables:
+    s: { type: integer, min: 0, max: 4, initial: 0 }
+
+  transitions:
+    - { id: t01, when: "s == 0", updates: { s: 1 } }
+    - { id: t02, when: "s == 0", updates: { s: 2 } }
+    - { id: t13, when: "s == 1", updates: { s: 3 } }
+    - { id: t23, when: "s == 2", updates: { s: 3 } }
+    - { id: t34, when: "s == 3", updates: { s: 4 } }
+
+properties:
+  - id: never-terminal
+    type: invariant
+    description: "State 4 is never reached (FAILS with a shortest trace of length 3)."
+    expression: "s != 4"
+
+  - id: reach-three
+    type: reachability
+    target: "s == 3"
+
+  - id: always-ends
+    type: ctl
+    description: "Every execution eventually reaches state 4."
+    formula: "AF {s == 4}"
+
+  - id: can-avoid-end
+    type: ctl
+    description: "Some execution avoids state 4 forever (FAILS: every path ends there)."
+    formula: "EG {s != 4}"
+
+  - id: terminal-only-at-four
+    type: deadlock_free
+    unless: "s == 4"

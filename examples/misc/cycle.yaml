@@ -1,0 +1,39 @@
+schema_version: "1.0"
+
+# A counter modulo 4 that ticks forever: a single cycle 0 -> 1 -> 2 -> 3 -> 0.
+model:
+  id: modulo-cycle
+  description: "A modulo-4 counter."
+
+  variables:
+    x: { type: integer, min: 0, max: 3, initial: 0 }
+
+  transitions:
+    - id: tick
+      updates: { x: "(x + 1) % 4" }
+
+properties:
+  - id: in-range
+    type: invariant
+    expression: "0 <= x <= 3"
+
+  - id: returns-to-zero
+    type: ctl
+    description: "Every execution returns to 0 infinitely often."
+    formula: "AG AF {x == 0}"
+
+  - id: always-can-reach-three
+    type: ctl
+    formula: "AG EF {x == 3}"
+
+  - id: never-five
+    type: ctl
+    description: "x eventually becomes 5 (FAILS: the cycle never reaches it)."
+    formula: "AF {x == 5}"
+
+  - id: five-reachable
+    type: reachability
+    target: "x == 5"
+
+  - id: no-deadlock
+    type: deadlock_free
