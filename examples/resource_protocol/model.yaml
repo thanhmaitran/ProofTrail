@@ -1,0 +1,54 @@
+schema_version: "1.0"
+
+# Two processes each need both resources A and B. p1 takes A then B, p2 takes
+# B then A: the classic lock-ordering deadlock.
+model:
+  id: resource-protocol
+  description: "Two processes acquiring two resources in opposite orders."
+
+  variables:
+    p1: { type: enum, values: [start, has_a, has_both], initial: start }
+    p2: { type: enum, values: [start, has_b, has_both], initial: start }
+    a:  { type: enum, values: [free, by_p1, by_p2], initial: free }
+    b:  { type: enum, values: [free, by_p1, by_p2], initial: free }
+
+  transitions:
+    - id: p1_take_a
+      when: 'p1 == "start" and a == "free"'
+      updates: { p1: has_a, a: by_p1 }
+    - id: p1_take_b
+      when: 'p1 == "has_a" and b == "free"'
+      updates: { p1: has_both, b: by_p1 }
+    - id: p1_release
+      when: 'p1 == "has_both"'
+      updates: { p1: start, a: free, b: free }
+    - id: p2_take_b
+      when: 'p2 == "start" and b == "free"'
+      updates: { p2: has_b, b: by_p2 }
+    - id: p2_take_a
+      when: 'p2 == "has_b" and a == "free"'
+      updates: { p2: has_both, a: by_p2 }
+    - id: p2_release
+      when: 'p2 == "has_both"'
+      updates: { p2: start, a: free, b: free }
+
+properties:
+  - id: mutual-exclusion
+    type: invariant
+    description: "The two processes never hold both resources at once."
+    expression: 'not (p1 == "has_both" and p2 == "has_both")'
+
+  - id: ownership-consistent
+    type: invariant
+    description: "A process that holds both resources is recorded as their owner."
+    expression: >-
+      (p1 != "has_both" or (a == "by_p1" and b == "by_p1")) and
+      (p2 != "has_both" or (a == "by_p2" and b == "by_p2"))
+
+  - id: deadlock-free
+    type: deadlock_free
+    description: "Some process can always make progress (FAILS: lock-ordering deadlock)."
+
+  - id: p1-can-finish
+    type: reachability
+    target: 'p1 == "has_both"'

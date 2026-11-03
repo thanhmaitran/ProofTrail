@@ -1,0 +1,47 @@
+schema_version: "1.0"
+
+# The fix for model.yaml: both processes take A first, then B. Exactly one
+# rule differs from model.yaml (p2 starts with A instead of B).
+model:
+  id: resource-protocol-ordered
+  description: "Two processes acquiring resources in the same global order."
+
+  variables:
+    p1: { type: enum, values: [start, has_a, has_both], initial: start }
+    p2: { type: enum, values: [start, has_a, has_both], initial: start }
+    a:  { type: enum, values: [free, by_p1, by_p2], initial: free }
+    b:  { type: enum, values: [free, by_p1, by_p2], initial: free }
+
+  transitions:
+    - id: p1_take_a
+      when: 'p1 == "start" and a == "free"'
+      updates: { p1: has_a, a: by_p1 }
+    - id: p1_take_b
+      when: 'p1 == "has_a" and b == "free"'
+      updates: { p1: has_both, b: by_p1 }
+    - id: p1_release
+      when: 'p1 == "has_both"'
+      updates: { p1: start, a: free, b: free }
+    - id: p2_take_a
+      when: 'p2 == "start" and a == "free"'
+      updates: { p2: has_a, a: by_p2 }
+    - id: p2_take_b
+      when: 'p2 == "has_a" and b == "free"'
+      updates: { p2: has_both, b: by_p2 }
+    - id: p2_release
+      when: 'p2 == "has_both"'
+      updates: { p2: start, a: free, b: free }
+
+properties:
+  - id: mutual-exclusion
+    type: invariant
+    expression: 'not (p1 == "has_both" and p2 == "has_both")'
+
+  - id: deadlock-free
+    type: deadlock_free
+    description: "With a global lock order no state is stuck."
+
+  - id: can-always-restart
+    type: ctl
+    description: "From every state both processes can end up idle again."
+    formula: 'AG EF ({p1 == "start"} && {p2 == "start"})'
