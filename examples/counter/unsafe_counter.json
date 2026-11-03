@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "model": {
+    "id": "unsafe-counter-json",
+    "description": "The unsafe counter written as JSON.",
+    "variables": {
+      "counter": { "type": "integer", "initial": 0 }
+    },
+    "transitions": [
+      {
+        "id": "increment",
+        "when": "counter <= 3",
+        "updates": { "counter": "counter + 1" }
+      }
+    ]
+  },
+  "properties": [
+    {
+      "id": "counter-bound",
+      "type": "invariant",
+      "expression": "counter <= 3"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+schema_version: "1.0"
+
+model:
+  id: unsafe-counter
+  description: "A counter with an intentional off-by-one defect in its guard."
+
+  variables:
+    counter:
+      type: integer
+      initial: 0
+
+  transitions:
+    - id: increment
+      # BUG (intentional): should be "counter < 3". At counter = 3 the guard
+      # still allows an increment, so the counter can reach 4.
+      when: "counter <= 3"
+      updates:
+        counter: "counter + 1"
+
+properties:
+  - id: counter-bound
+    type: invariant
+    description: "The counter never exceeds 3."
+    expression: "counter <= 3"

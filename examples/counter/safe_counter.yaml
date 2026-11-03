@@ -1,0 +1,48 @@
+schema_version: "1.0"
+
+model:
+  id: safe-counter
+  description: "A counter that counts from 0 up to 3 and then stops."
+
+  variables:
+    counter:
+      type: integer
+      min: 0
+      max: 3
+      initial: 0
+
+  transitions:
+    - id: increment
+      when: "counter < 3"
+      updates:
+        counter: "counter + 1"
+
+properties:
+  - id: counter-bound
+    type: invariant
+    description: "The counter always stays between 0 and 3."
+    expression: "0 <= counter <= 3"
+
+  - id: can-reach-max
+    type: reachability
+    description: "The counter can reach 3."
+    target: "counter == 3"
+
+  - id: four-reachable
+    type: reachability
+    description: "The counter can reach 4 (expected to be VIOLATED: it cannot)."
+    target: "counter == 4"
+
+  - id: eventually-max
+    type: ctl
+    description: "Every execution eventually reaches 3."
+    formula: "AF {counter == 3}"
+
+  - id: stops-only-at-max
+    type: deadlock_free
+    description: "The only state without a successor is counter = 3."
+    unless: "counter == 3"
+
+  - id: never-stops
+    type: deadlock_free
+    description: "No state is terminal (expected to be violated at counter = 3)."

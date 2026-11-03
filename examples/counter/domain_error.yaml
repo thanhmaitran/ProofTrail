@@ -1,0 +1,24 @@
+schema_version: "1.0"
+
+model:
+  id: counter-domain-error
+  description: "The declared bound (max 3) disagrees with the guard, which allows 4."
+
+  variables:
+    counter:
+      type: integer
+      min: 0
+      max: 3
+      initial: 0
+
+  transitions:
+    - id: increment
+      # BUG (intentional): the guard lets the counter step past its declared maximum.
+      when: "counter <= 3"
+      updates:
+        counter: "counter + 1"
+
+properties:
+  - id: counter-bound
+    type: invariant
+    expression: "counter <= 3"
