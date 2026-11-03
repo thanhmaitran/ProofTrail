@@ -1,0 +1,94 @@
+{
+  "schema_version": "1.0",
+  "tool": {
+    "name": "ProofTrail",
+    "version": "0.1.0"
+  },
+  "model_id": "unsafe-counter",
+  "status": "VIOLATED",
+  "complete": true,
+  "exhaustive": false,
+  "counts": {
+    "holds": 0,
+    "violated": 1,
+    "unknown": 0,
+    "error": 0
+  },
+  "configuration": {
+    "limits": {
+      "max_states": 1000000,
+      "max_depth": null,
+      "timeout_seconds": null
+    },
+    "indexing": "object",
+    "strategy": "shared"
+  },
+  "statistics": {
+    "explorations": 1,
+    "states_explored": 5,
+    "states_expanded": 4,
+    "transitions_examined": 4,
+    "max_depth_reached": 3,
+    "deadlock_states": 0,
+    "elapsed_seconds": 0.000244
+  },
+  "results": [
+    {
+      "property_id": "counter-bound",
+      "kind": "invariant",
+      "status": "VIOLATED",
+      "complete": true,
+      "description": "The counter never exceeds 3.",
+      "counterexample": {
+        "steps": [
+          {
+            "index": 0,
+            "state": {
+              "counter": 0
+            }
+          },
+          {
+            "index": 1,
+            "action": "increment",
+            "state": {
+              "counter": 1
+            }
+          },
+          {
+            "index": 2,
+            "action": "increment",
+            "state": {
+              "counter": 2
+            }
+          },
+          {
+            "index": 3,
+            "action": "increment",
+            "state": {
+              "counter": 3
+            }
+          },
+          {
+            "index": 4,
+            "action": "increment",
+            "state": {
+              "counter": 4
+            }
+          }
+        ],
+        "kind": "finite",
+        "length": 4
+      }
+    }
+  ],
+  "stop_reason": "stopped_early",
+  "specification": {
+    "path": "examples\\counter\\unsafe_counter.yaml",
+    "sha256": "91ce834e8df9a69f3579f128de638fca98819ad6a8d5804266e05463cd3bd0b4"
+  },
+  "environment": {
+    "python": "3.13.17",
+    "implementation": "CPython",
+    "platform": "Windows-11-10.0.26200-SP0"
+  }
+}
