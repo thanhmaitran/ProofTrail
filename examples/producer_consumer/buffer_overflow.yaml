@@ -1,0 +1,27 @@
+schema_version: "1.0"
+
+# Same model as model.yaml except for one rule: the producer's guard is off by
+# one, so the buffer can overflow. Used as a regression pair.
+model:
+  id: buffer-overflow
+  description: "A bounded buffer whose producer guard is off by one."
+
+  variables:
+    items:
+      type: integer
+      min: 0
+      initial: 0
+
+  transitions:
+    - id: produce
+      when: "items <= 3"   # BUG (intentional): should be items < 3
+      updates: { items: "items + 1" }
+    - id: consume
+      when: "items > 0"
+      updates: { items: "items - 1" }
+
+properties:
+  - id: buffer-bounds
+    type: invariant
+    description: "The buffer never holds more than 3 items."
+    expression: "items <= 3"

@@ -1,0 +1,56 @@
+schema_version: "1.0"
+
+# One producer and one consumer share a buffer of capacity 3.
+model:
+  id: producer-consumer
+  description: "A bounded buffer with a producer and a consumer."
+
+  variables:
+    items:
+      type: integer
+      min: 0
+      max: 3
+      initial: 0
+
+  transitions:
+    - id: produce
+      when: "items < 3"
+      updates: { items: "items + 1" }
+    - id: consume
+      when: "items > 0"
+      updates: { items: "items - 1" }
+
+  labels:
+    empty: "items == 0"
+    full: "items == 3"
+
+properties:
+  - id: buffer-bounds
+    type: invariant
+    expression: "0 <= items <= 3"
+
+  - id: can-fill
+    type: reachability
+    target: "items == 3"
+
+  - id: no-deadlock
+    type: deadlock_free
+    description: "Either the producer or the consumer can always move."
+
+  - id: can-always-drain
+    type: ctl
+    description: "From every state the buffer can become empty."
+    formula: "AG EF empty"
+
+  - id: full-implies-no-produce
+    type: ctl
+    description: "In a full buffer the only possible next states are not full."
+    formula: "AG (full -> AX !full)"
+
+  - id: full-eventually-drained
+    type: response
+    description: >-
+      A full buffer is eventually empty. FAILS without fairness: the
+      producer and consumer may alternate forever between 2 and 3.
+    trigger: "items == 3"
+    response: "items == 0"
