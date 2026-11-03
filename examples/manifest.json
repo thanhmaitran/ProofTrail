@@ -1,0 +1,658 @@
+{
+  "corpus_version": "1.0",
+  "description": "ProofTrail example corpus. Expected answers were derived by hand (see 'derivation'), not copied from the tool's output.",
+  "cases": [
+    {
+      "id": "counter-safe-001",
+      "model": "counter/safe_counter.yaml",
+      "purpose": "Bounded counter: every verdict kind on a 4-state chain",
+      "derivation": "States are 0,1,2,3 in a chain. Invariant holds on all four. Value 3 is 3 steps away, 4 is unreachable. The only state without a successor is 3, so deadlock-freedom fails (3 steps) unless 3 is allowed. A single path always ends in 3, so AF counter==3 holds.",
+      "expected": [
+        {
+          "property_id": "counter-bound",
+          "status": "HOLDS",
+          "states_explored": 4
+        },
+        {
+          "property_id": "can-reach-max",
+          "status": "HOLDS",
+          "witness_length": 3
+        },
+        {
+          "property_id": "four-reachable",
+          "status": "VIOLATED",
+          "reason": "unreachable"
+        },
+        {
+          "property_id": "eventually-max",
+          "status": "HOLDS"
+        },
+        {
+          "property_id": "stops-only-at-max",
+          "status": "HOLDS"
+        },
+        {
+          "property_id": "never-stops",
+          "status": "VIOLATED",
+          "reason": "deadlock",
+          "counterexample_length": 3
+        }
+      ]
+    },
+    {
+      "id": "counter-safe-options-001",
+      "model": "counter/safe_counter.yaml",
+      "purpose": "Packed indexing, successor cache and per-property strategy must not change any result",
+      "derivation": "Same model and expected results as counter-safe-001: the options only change how the search is carried out.",
+      "options": {
+        "indexing": "packed",
+        "cache": true,
+        "strategy": "per-property"
+      },
+      "expected": [
+        {
+          "property_id": "counter-bound",
+          "status": "HOLDS",
+          "states_explored": 4
+        },
+        {
+          "property_id": "can-reach-max",
+          "status": "HOLDS",
+          "witness_length": 3
+        },
+        {
+          "property_id": "four-reachable",
+          "status": "VIOLATED",
+          "reason": "unreachable"
+        },
+        {
+          "property_id": "eventually-max",
+          "status": "HOLDS"
+        },
+        {
+          "property_id": "stops-only-at-max",
+          "status": "HOLDS"
+        },
+        {
+          "property_id": "never-stops",
+          "status": "VIOLATED",
+          "reason": "deadlock",
+          "counterexample_length": 3
+        }
+      ]
+    },
+    {
+      "id": "counter-unsafe-001",
+      "model": "counter/unsafe_counter.yaml",
+      "purpose": "Off-by-one guard gives a shortest counterexample",
+      "derivation": "The guard counter<=3 admits 3->4. The only path is 0,1,2,3,4: 4 steps. Discovering 4 ends the search with 5 states found.",
+      "expected": [
+        {
+          "property_id": "counter-bound",
+          "status": "VIOLATED",
+          "counterexample_length": 4,
+          "states_explored": 5
+        }
+      ]
+    },
+    {
+      "id": "counter-unsafe-json-001",
+      "model": "counter/unsafe_counter.json",
+      "purpose": "The JSON format gives the same answer as YAML",
+      "derivation": "Identical model to counter-unsafe-001, written as JSON.",
+      "expected": [
+        {
+          "property_id": "counter-bound",
+          "status": "VIOLATED",
+          "counterexample_length": 4,
+          "states_explored": 5
+        }
+      ]
+    },
+    {
+      "id": "counter-domain-error-001",
+      "model": "counter/domain_error.yaml",
+      "purpose": "A step outside a declared domain is an ERROR, not a verdict",
+      "derivation": "counter is declared 0..3 but the guard counter<=3 assigns 4 from state 3. That is a modelling error, so the property must be ERROR (model_error), never HOLDS or VIOLATED.",
+      "expected": [
+        {
+          "property_id": "counter-bound",
+          "status": "ERROR",
+          "reason": "model_error"
+        }
+      ]
+    },
+    {
+      "id": "counter-limit-states-001",
+      "model": "counter/safe_counter.yaml",
+      "purpose": "A state limit below the state-space size gives UNKNOWN for every property",
+      "derivation": "The space has 4 states; with max_states=2 the search stops before it can decide anything. No property may be reported HOLDS, and none was violated within the first two states.",
+      "options": {
+        "max_states": 2
+      },
+      "expected": [
+        {
+          "property_id": "counter-bound",
+          "status": "UNKNOWN",
+          "reason": "max_states"
+        },
+        {
+          "property_id": "can-reach-max",
+          "status": "UNKNOWN",
+          "reason": "max_states"
+        },
+        {
+          "property_id": "four-reachable",
+          "status": "UNKNOWN",
+          "reason": "max_states"
+        },
+        {
+          "property_id": "eventually-max",
+          "status": "UNKNOWN",
+          "reason": "max_states"
+        },
+        {
+          "property_id": "stops-only-at-max",
+          "status": "UNKNOWN",
+          "reason": "max_states"
+        },
+        {
+          "property_id": "never-stops",
+          "status": "UNKNOWN",
+          "reason": "max_states"
+        }
+      ]
+    },
+    {
+      "id": "counter-unsafe-limit-exact-001",
+      "model": "counter/unsafe_counter.yaml",
+      "purpose": "A limit exactly large enough to see the counterexample still finds it",
+      "derivation": "The violating state 4 is the 5th state discovered; with max_states=5 it can be indexed, so the counterexample is found.",
+      "options": {
+        "max_states": 5
+      },
+      "expected": [
+        {
+          "property_id": "counter-bound",
+          "status": "VIOLATED",
+          "counterexample_length": 4
+        }
+      ]
+    },
+    {
+      "id": "counter-unsafe-limit-short-001",
+      "model": "counter/unsafe_counter.yaml",
+      "purpose": "One state too few: UNKNOWN, not HOLDS",
+      "derivation": "With max_states=4 the search holds states 0..3 and must stop before indexing 4; the invariant is undecided.",
+      "options": {
+        "max_states": 4
+      },
+      "expected": [
+        {
+          "property_id": "counter-bound",
+          "status": "UNKNOWN",
+          "reason": "max_states"
+        }
+      ]
+    },
+    {
+      "id": "counter-unsafe-limit-depth-001",
+      "model": "counter/unsafe_counter.yaml",
+      "purpose": "A depth limit below the violation depth gives UNKNOWN",
+      "derivation": "The violation is at depth 4; with max_depth=2 states at depth 2 are not expanded, so the exploration is incomplete.",
+      "options": {
+        "max_depth": 2
+      },
+      "expected": [
+        {
+          "property_id": "counter-bound",
+          "status": "UNKNOWN",
+          "reason": "max_depth"
+        }
+      ]
+    },
+    {
+      "id": "traffic-light-001",
+      "model": "traffic_light/model.yaml",
+      "purpose": "Two crossing lights: safety holds, starvation freedom fails without fairness",
+      "derivation": "A light turns green only while the other is red, so the reachable states are (ns,ew) in {(R,R),(G,R),(Y,R),(R,G),(R,Y)}: 5 states. Never both green; at least one red. From any state ns can still become green (AG EF). A green ns has the single successor yellow then red (response holds). From (R,R) the path ew_go,ew_slow,ew_stop repeats forever with ns red, so 'red is eventually green' fails with the lasso (R,R)->(R,G)->(R,Y)->(R,R).",
+      "expected": [
+        {
+          "property_id": "never-both-green",
+          "status": "HOLDS",
+          "states_explored": 5
+        },
+        {
+          "property_id": "one-direction-at-a-time",
+          "status": "HOLDS"
+        },
+        {
+          "property_id": "no-deadlock",
+          "status": "HOLDS"
+        },
+        {
+          "property_id": "ns-can-go",
+          "status": "HOLDS",
+          "witness_length": 1
+        },
+        {
+          "property_id": "always-recoverable",
+          "status": "HOLDS"
+        },
+        {
+          "property_id": "green-ends",
+          "status": "HOLDS"
+        },
+        {
+          "property_id": "ns-eventually-served",
+          "status": "VIOLATED",
+          "lasso": true,
+          "counterexample_length": 2
+        }
+      ]
+    },
+    {
+      "id": "traffic-light-options-001",
+      "model": "traffic_light/model.yaml",
+      "purpose": "Options do not change CTL/response results",
+      "derivation": "Same expectations as traffic-light-001.",
+      "options": {
+        "indexing": "packed",
+        "cache": true,
+        "strategy": "per-property"
+      },
+      "expected": [
+        {
+          "property_id": "never-both-green",
+          "status": "HOLDS",
+          "states_explored": 5
+        },
+        {
+          "property_id": "one-direction-at-a-time",
+          "status": "HOLDS"
+        },
+        {
+          "property_id": "no-deadlock",
+          "status": "HOLDS"
+        },
+        {
+          "property_id": "ns-can-go",
+          "status": "HOLDS",
+          "witness_length": 1
+        },
+        {
+          "property_id": "always-recoverable",
+          "status": "HOLDS"
+        },
+        {
+          "property_id": "green-ends",
+          "status": "HOLDS"
+        },
+        {
+          "property_id": "ns-eventually-served",
+          "status": "VIOLATED",
+          "lasso": true,
+          "counterexample_length": 2
+        }
+      ]
+    },
+    {
+      "id": "producer-consumer-001",
+      "model": "producer_consumer/model.yaml",
+      "purpose": "Bounded buffer: safety, recoverability, and a fairness-dependent failure",
+      "derivation": "items is in 0..3 and moves by +-1: a chain of 4 states with edges produce (3) and consume (3) = 6 transitions. At 3 only consume is enabled so AX !full holds. The buffer can always be drained. Alternating produce/consume between 2 and 3 forever avoids 0, so 'full is eventually empty' fails with a lasso; the shortest prefix reaches 3 in 3 steps and the lasso adds the state 2 and loops back to 3.",
+      "expected": [
+        {
+          "property_id": "buffer-bounds",
+          "status": "HOLDS",
+          "states_explored": 4
+        },
+        {
+          "property_id": "can-fill",
+          "status": "HOLDS",
+          "witness_length": 3
+        },
+        {
+          "property_id": "no-deadlock",
+          "status": "HOLDS"
+        },
+        {
+          "property_id": "can-always-drain",
+          "status": "HOLDS"
+        },
+        {
+          "property_id": "full-implies-no-produce",
+          "status": "HOLDS"
+        },
+        {
+          "property_id": "full-eventually-drained",
+          "status": "VIOLATED",
+          "lasso": true,
+          "counterexample_length": 4
+        }
+      ]
+    },
+    {
+      "id": "buffer-overflow-001",
+      "model": "producer_consumer/buffer_overflow.yaml",
+      "purpose": "Regression pair: one wrong guard breaks the buffer bound",
+      "derivation": "Compared with producer-consumer-001 only the guard items<=3 differs; 0,1,2,3,4 is the shortest route to 4 (4 steps).",
+      "expected": [
+        {
+          "property_id": "buffer-bounds",
+          "status": "VIOLATED",
+          "counterexample_length": 4
+        }
+      ]
+    },
+    {
+      "id": "resource-protocol-001",
+      "model": "resource_protocol/model.yaml",
+      "purpose": "Opposite lock order deadlocks",
+      "derivation": "Valid (p1,p2) combinations: (S,S),(S,B),(S,B2),(A,S),(A,B),(B2,S) = 6 states. In (A,B) p1 holds a and waits for b while p2 holds b and waits for a: no transition is enabled. It is reached by p1_take_a, p2_take_b (2 steps). 8 transitions in total. p1 can finish in 2 steps.",
+      "expected": [
+        {
+          "property_id": "mutual-exclusion",
+          "status": "HOLDS",
+          "states_explored": 6
+        },
+        {
+          "property_id": "ownership-consistent",
+          "status": "HOLDS"
+        },
+        {
+          "property_id": "deadlock-free",
+          "status": "VIOLATED",
+          "reason": "deadlock",
+          "counterexample_length": 2
+        },
+        {
+          "property_id": "p1-can-finish",
+          "status": "HOLDS",
+          "witness_length": 2
+        }
+      ]
+    },
+    {
+      "id": "resource-protocol-ordered-001",
+      "model": "resource_protocol/ordered.yaml",
+      "purpose": "Regression pair: a global lock order removes the deadlock",
+      "derivation": "Only p2's first resource changed. Valid combinations: (S,S),(A,S),(B2,S),(S,A'),(S,B2') = 5 states, 6 transitions, none without a successor. From every state both can return to idle.",
+      "expected": [
+        {
+          "property_id": "mutual-exclusion",
+          "status": "HOLDS",
+          "states_explored": 5
+        },
+        {
+          "property_id": "deadlock-free",
+          "status": "HOLDS"
+        },
+        {
+          "property_id": "can-always-restart",
+          "status": "HOLDS"
+        }
+      ]
+    },
+    {
+      "id": "peterson-001",
+      "model": "peterson/model.yaml",
+      "purpose": "Peterson's algorithm: mutual exclusion and deadlock freedom hold",
+      "derivation": "Textbook result: Peterson's algorithm guarantees mutual exclusion and deadlock freedom. p0 is not starved by p1 even without fairness because once p0 waits p1 is blocked after at most two steps. An idle p0 may never be scheduled while p1 loops, so 'eventually requests' fails without fairness. The reachable state count (20) is cross-checked by an independent hand-coded reference in the test suite.",
+      "expected": [
+        {
+          "property_id": "mutual-exclusion",
+          "status": "HOLDS",
+          "states_explored": 20
+        },
+        {
+          "property_id": "deadlock-free",
+          "status": "HOLDS"
+        },
+        {
+          "property_id": "p0-can-enter",
+          "status": "HOLDS",
+          "witness_length": 3
+        },
+        {
+          "property_id": "can-always-reset",
+          "status": "HOLDS"
+        },
+        {
+          "property_id": "p0-not-starved",
+          "status": "HOLDS"
+        },
+        {
+          "property_id": "p0-eventually-requests",
+          "status": "VIOLATED",
+          "lasso": true
+        }
+      ]
+    },
+    {
+      "id": "peterson-broken-001",
+      "model": "peterson/broken_mutex.yaml",
+      "purpose": "Removing the waiting test breaks mutual exclusion",
+      "derivation": "Each process needs 3 steps (flag, turn, enter) and nothing blocks entry, so both reach crit after 3+3 = 6 steps, the shortest violation.",
+      "expected": [
+        {
+          "property_id": "mutual-exclusion",
+          "status": "VIOLATED",
+          "counterexample_length": 6
+        }
+      ]
+    },
+    {
+      "id": "cycle-001",
+      "model": "misc/cycle.yaml",
+      "purpose": "A single cycle: infinitely-often properties and a lasso",
+      "derivation": "x goes 0,1,2,3,0,... forever: 4 states, 4 transitions. Every path returns to 0, and 3 is always reachable. 5 is never reached, so AF x==5 fails with the whole cycle as lasso (3 steps then the loop edge).",
+      "expected": [
+        {
+          "property_id": "in-range",
+          "status": "HOLDS",
+          "states_explored": 4
+        },
+        {
+          "property_id": "returns-to-zero",
+          "status": "HOLDS"
+        },
+        {
+          "property_id": "always-can-reach-three",
+          "status": "HOLDS"
+        },
+        {
+          "property_id": "never-five",
+          "status": "VIOLATED",
+          "lasso": true,
+          "counterexample_length": 3
+        },
+        {
+          "property_id": "five-reachable",
+          "status": "VIOLATED",
+          "reason": "unreachable"
+        },
+        {
+          "property_id": "no-deadlock",
+          "status": "HOLDS"
+        }
+      ]
+    },
+    {
+      "id": "multi-init-001",
+      "model": "misc/multi_init.yaml",
+      "purpose": "Several initial states",
+      "derivation": "Initial states: a in {T,F} x n in {0,1} = 4. Reachable: n in 0..2 x a in {T,F} = 6 states. Every state has flip, and inc if n<2: 6+4 = 10 transitions. (a=T,n=1) reaches (T,2) in one step.",
+      "expected": [
+        {
+          "property_id": "n-bound",
+          "status": "HOLDS",
+          "states_explored": 6
+        },
+        {
+          "property_id": "reach-both",
+          "status": "HOLDS",
+          "witness_length": 1
+        },
+        {
+          "property_id": "no-deadlock",
+          "status": "HOLDS"
+        }
+      ]
+    },
+    {
+      "id": "diamond-001",
+      "model": "misc/diamond.yaml",
+      "purpose": "Equal-length routes and a terminal state",
+      "derivation": "0->{1,2}->3->4: 5 states. The shortest route to 4 has 3 steps; 3 is 2 steps away. Every path ends in 4 (AF holds); no path avoids 4 (EG fails, and the engine documents that it has no trace extractor for a violated EG). State 4 is the only terminal state.",
+      "expected": [
+        {
+          "property_id": "never-terminal",
+          "status": "VIOLATED",
+          "counterexample_length": 3,
+          "states_explored": 5
+        },
+        {
+          "property_id": "reach-three",
+          "status": "HOLDS",
+          "witness_length": 2
+        },
+        {
+          "property_id": "always-ends",
+          "status": "HOLDS"
+        },
+        {
+          "property_id": "can-avoid-end",
+          "status": "VIOLATED",
+          "reason": "no_trace_for_formula_shape"
+        },
+        {
+          "property_id": "terminal-only-at-four",
+          "status": "HOLDS"
+        }
+      ]
+    },
+    {
+      "id": "long-trace-001",
+      "model": "misc/long_trace.yaml",
+      "purpose": "A deep (20-step) counterexample is reconstructed completely",
+      "derivation": "x counts 0..20 with the bug at 20: 21 states, shortest violation 20 steps.",
+      "expected": [
+        {
+          "property_id": "x-bound",
+          "status": "VIOLATED",
+          "counterexample_length": 20,
+          "states_explored": 21
+        }
+      ]
+    },
+    {
+      "id": "invalid-syntax-error-001",
+      "model": "invalid/syntax_error.yaml",
+      "purpose": "A malformed specification is rejected with a specific error",
+      "derivation": "The file is deliberately malformed; loading it must raise a specification error (never a verification verdict).",
+      "expected": {
+        "load_error": "syntax error"
+      }
+    },
+    {
+      "id": "invalid-unknown-variable-001",
+      "model": "invalid/unknown_variable.yaml",
+      "purpose": "A malformed specification is rejected with a specific error",
+      "derivation": "The file is deliberately malformed; loading it must raise a specification error (never a verification verdict).",
+      "expected": {
+        "load_error": "unknown variable"
+      }
+    },
+    {
+      "id": "invalid-type-error-001",
+      "model": "invalid/type_error.yaml",
+      "purpose": "A malformed specification is rejected with a specific error",
+      "derivation": "The file is deliberately malformed; loading it must raise a specification error (never a verification verdict).",
+      "expected": {
+        "load_error": "must be int"
+      }
+    },
+    {
+      "id": "invalid-code-injection-001",
+      "model": "invalid/code_injection.yaml",
+      "purpose": "A malformed specification is rejected with a specific error",
+      "derivation": "The file is deliberately malformed; loading it must raise a specification error (never a verification verdict).",
+      "expected": {
+        "load_error": "unsupported construct"
+      }
+    },
+    {
+      "id": "invalid-duplicate-property-001",
+      "model": "invalid/duplicate_property.yaml",
+      "purpose": "A malformed specification is rejected with a specific error",
+      "derivation": "The file is deliberately malformed; loading it must raise a specification error (never a verification verdict).",
+      "expected": {
+        "load_error": "duplicate property id"
+      }
+    },
+    {
+      "id": "invalid-bad-schema-version-001",
+      "model": "invalid/bad_schema_version.yaml",
+      "purpose": "A malformed specification is rejected with a specific error",
+      "derivation": "The file is deliberately malformed; loading it must raise a specification error (never a verification verdict).",
+      "expected": {
+        "load_error": "unsupported schema_version"
+      }
+    },
+    {
+      "id": "invalid-yaml-alias-001",
+      "model": "invalid/yaml_alias.yaml",
+      "purpose": "A malformed specification is rejected with a specific error",
+      "derivation": "The file is deliberately malformed; loading it must raise a specification error (never a verification verdict).",
+      "expected": {
+        "load_error": "aliases are not allowed"
+      }
+    },
+    {
+      "id": "invalid-unknown-key-001",
+      "model": "invalid/unknown_key.yaml",
+      "purpose": "A malformed specification is rejected with a specific error",
+      "derivation": "The file is deliberately malformed; loading it must raise a specification error (never a verification verdict).",
+      "expected": {
+        "load_error": "unknown key"
+      }
+    },
+    {
+      "id": "invalid-duplicate-key-001",
+      "model": "invalid/duplicate_key.yaml",
+      "purpose": "A malformed specification is rejected with a specific error",
+      "derivation": "The file is deliberately malformed; loading it must raise a specification error (never a verification verdict).",
+      "expected": {
+        "load_error": "duplicate key"
+      }
+    },
+    {
+      "id": "invalid-bool-as-int-001",
+      "model": "invalid/bool_as_int.yaml",
+      "purpose": "A malformed specification is rejected with a specific error",
+      "derivation": "The file is deliberately malformed; loading it must raise a specification error (never a verification verdict).",
+      "expected": {
+        "load_error": "not a valid integer value"
+      }
+    },
+    {
+      "id": "invalid-bad-ctl-001",
+      "model": "invalid/bad_ctl.yaml",
+      "purpose": "A malformed specification is rejected with a specific error",
+      "derivation": "The file is deliberately malformed; loading it must raise a specification error (never a verification verdict).",
+      "expected": {
+        "load_error": "unknown identifier"
+      }
+    },
+    {
+      "id": "invalid-initial-out-of-domain-001",
+      "model": "invalid/initial_out_of_domain.yaml",
+      "purpose": "A malformed specification is rejected with a specific error",
+      "derivation": "The file is deliberately malformed; loading it must raise a specification error (never a verification verdict).",
+      "expected": {
+        "load_error": "outside its domain"
+      }
+    }
+  ]
+}
