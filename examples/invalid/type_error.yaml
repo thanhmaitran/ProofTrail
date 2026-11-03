@@ -1,0 +1,6 @@
+schema_version: "1.0"
+model:
+  id: bad-types
+  variables: { counter: { type: integer, initial: 0 } }
+  transitions:
+    - { id: inc, updates: { counter: "counter + true" } }

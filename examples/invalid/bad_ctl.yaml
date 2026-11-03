@@ -1,0 +1,6 @@
+schema_version: "1.0"
+model:
+  id: bad-ctl
+  variables: { x: { type: integer, initial: 0 } }
+properties:
+  - { id: p, type: ctl, formula: "AG foo" }

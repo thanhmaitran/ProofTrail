@@ -1,0 +1,5 @@
+schema_version: "1.0"
+model:
+  id: dup-key
+  id: dup-key-again
+  variables: { x: { type: integer, initial: 0 } }

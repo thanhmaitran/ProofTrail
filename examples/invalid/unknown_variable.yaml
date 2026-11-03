@@ -1,0 +1,6 @@
+schema_version: "1.0"
+model:
+  id: bad-variable
+  variables: { counter: { type: integer, initial: 0 } }
+  transitions:
+    - { id: inc, when: "cnt < 3", updates: { counter: "counter + 1" } }

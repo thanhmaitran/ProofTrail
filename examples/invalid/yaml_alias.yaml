@@ -1,0 +1,6 @@
+schema_version: "1.0"
+model:
+  id: alias-bomb
+  variables:
+    x: &v { type: integer, initial: 0 }
+    y: *v

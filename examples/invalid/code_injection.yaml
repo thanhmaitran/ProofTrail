@@ -1,0 +1,9 @@
+schema_version: "1.0"
+# Specification files are data, never code: this must be rejected, not run.
+model:
+  id: injection
+  variables: { counter: { type: integer, initial: 0 } }
+  transitions:
+    - id: inc
+      when: "__import__('os').system('echo pwned') == 0"
+      updates: { counter: "counter + 1" }

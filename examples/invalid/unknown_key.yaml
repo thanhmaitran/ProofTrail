@@ -1,0 +1,6 @@
+schema_version: "1.0"
+model:
+  id: typo
+  variables: { x: { type: integer, initial: 0 } }
+  transition:
+    - { id: t, updates: { x: "x + 1" } }

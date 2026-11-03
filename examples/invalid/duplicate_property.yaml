@@ -1,0 +1,7 @@
+schema_version: "1.0"
+model:
+  id: dup-property
+  variables: { x: { type: integer, initial: 0 } }
+properties:
+  - { id: p, type: invariant, expression: "x == 0" }
+  - { id: p, type: invariant, expression: "x >= 0" }

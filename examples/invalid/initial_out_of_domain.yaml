@@ -1,0 +1,4 @@
+schema_version: "1.0"
+model:
+  id: bad-initial
+  variables: { x: { type: integer, min: 0, max: 3, initial: 7 } }

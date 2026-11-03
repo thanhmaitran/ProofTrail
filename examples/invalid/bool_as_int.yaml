@@ -1,0 +1,4 @@
+schema_version: "1.0"
+model:
+  id: bool-as-int
+  variables: { x: { type: integer, initial: true } }
