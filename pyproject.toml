@@ -1,0 +1,65 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prooftrail-model-checker"
+version = "0.1.0"
+description = "An explicit-state model checking and formal verification workbench."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["model checking", "formal verification", "CTL", "counterexample"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Quality Assurance",
+    "Intended Audience :: Science/Research",
+]
+dependencies = [
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "hypothesis>=6.0",
+    "ruff>=0.9",
+    "networkx>=3.0",  # independent reference algorithms in the test suite
+]
+visualization = [
+    "networkx>=3.0",
+    "matplotlib>=3.8",
+]
+
+[project.scripts]
+prooftrail = "prooftrail.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra"
+markers = [
+    "slow: tests that take more than a couple of seconds",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.coverage.run]
+source = ["prooftrail"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true

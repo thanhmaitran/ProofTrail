@@ -1,0 +1,15 @@
+# Local hooks use the ruff and pytest already installed in your virtualenv,
+# so no third-party hook revisions need to be pinned here.
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: ruff check
+        language: system
+        types: [python]
+      - id: ruff-format
+        name: ruff format --check
+        entry: ruff format --check
+        language: system
+        types: [python]
