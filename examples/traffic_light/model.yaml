@@ -1,0 +1,78 @@
+schema_version: "1.0"
+
+# A road junction with two crossing lights. A light may only turn green while
+# the other one is red, and it must pass through yellow back to red.
+model:
+  id: traffic-light
+  description: "Two crossing traffic lights (north-south and east-west)."
+
+  variables:
+    ns:
+      type: enum
+      values: [red, green, yellow]
+      initial: red
+    ew:
+      type: enum
+      values: [red, green, yellow]
+      initial: red
+
+  transitions:
+    - id: ns_go
+      when: 'ns == "red" and ew == "red"'
+      updates: { ns: green }
+    - id: ns_slow
+      when: 'ns == "green"'
+      updates: { ns: yellow }
+    - id: ns_stop
+      when: 'ns == "yellow"'
+      updates: { ns: red }
+    - id: ew_go
+      when: 'ew == "red" and ns == "red"'
+      updates: { ew: green }
+    - id: ew_slow
+      when: 'ew == "green"'
+      updates: { ew: yellow }
+    - id: ew_stop
+      when: 'ew == "yellow"'
+      updates: { ew: red }
+
+  labels:
+    ns_go_light: 'ns == "green"'
+    ew_go_light: 'ew == "green"'
+
+properties:
+  - id: never-both-green
+    type: invariant
+    description: "The two lights are never green at the same time."
+    expression: 'not (ns == "green" and ew == "green")'
+
+  - id: one-direction-at-a-time
+    type: invariant
+    description: "At least one light is red in every reachable state."
+    expression: 'ns == "red" or ew == "red"'
+
+  - id: no-deadlock
+    type: deadlock_free
+
+  - id: ns-can-go
+    type: reachability
+    target: 'ns == "green"'
+
+  - id: always-recoverable
+    type: ctl
+    description: "From every state a green light is still possible."
+    formula: "AG EF ns_go_light"
+
+  - id: green-ends
+    type: response
+    description: "A green north-south light is always followed by red."
+    trigger: 'ns == "green"'
+    response: 'ns == "red"'
+
+  - id: ns-eventually-served
+    type: response
+    description: >-
+      A red north-south light is eventually green. Without a fairness
+      assumption this FAILS: east-west may cycle forever and starve north-south.
+    trigger: 'ns == "red"'
+    response: 'ns == "green"'
